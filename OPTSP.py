@@ -1,9 +1,9 @@
 import streamlit as st
+import folium
 import numpy as np
 import pandas as pd
 import itertools
 from streamlit_folium import folium_static
-import folium
 from scipy.spatial.distance import pdist, squareform
 from geopy.distance import geodesic
 import random
