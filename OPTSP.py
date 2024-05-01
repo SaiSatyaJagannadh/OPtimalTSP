@@ -187,6 +187,11 @@ def app():
     else:
         selected_algorithms = [name for name in tsp_algorithms if st.checkbox(name)]
 
+    #Refresh Button
+    if st.button('Refresh Points'):
+        st.session_state.points = []
+        st.write("Points have been reset.")
+
     # Button to compute the optimized route
     if st.button('Generate Optimized Route'):
         if len(st.session_state.points) >= 2 and selected_algorithms:
@@ -220,8 +225,8 @@ def app():
             # Displaying the best algorithm and distance
             best_algorithm = results_df["Algorithm"][results_df["Total Distance (miles)"].idxmin()]
             best_route = routes[best_algorithm]
-            st.write(f"Best Optimized Delivery Route for {best_algorithm}:")
-            st.write(f"Total Distance: {results_df['Total Distance (miles)'][results_df['Total Distance (miles)'].idxmin()]} meters")
+            st.write(f"Best Optimized Delivery Route Provided by {best_algorithm}:")
+            st.write(f"Total Distance: {results_df['Total Distance (miles)'][results_df['Total Distance (miles)'].idxmin()]} miles")
 
             # Re-draw the map with the best route
             m = folium.Map(location=[36.7014631, -118.755997], zoom_start=10, tiles='OpenStreetMap')
@@ -237,6 +242,21 @@ def app():
             ax.grid(True)
             plt.xticks(rotation=45, ha='right')  # Rotate labels for better visibility
             plt.tight_layout()  # Adjust layout to prevent overlap
+            st.pyplot(fig)
+
+            # Line graph for distance comparison
+            st.subheader("Distance Comparison of TSP Algorithms (Line Graph)")
+            fig, ax = plt.subplots()
+            # Plot the distances over the algorithms
+            ax.plot(results_df["Algorithm"], results_df["Total Distance (miles)"], marker='o', color='b')
+            # Label the axes
+            ax.set_xlabel('Algorithm')
+            ax.set_ylabel('Distance (miles)')
+            # Rotate the x-axis labels for better visibility
+            plt.xticks(rotation=45, ha='right')
+            # Adjust layout to prevent overlap
+            plt.tight_layout()
+            # Display the plot
             st.pyplot(fig)
 
         else:
