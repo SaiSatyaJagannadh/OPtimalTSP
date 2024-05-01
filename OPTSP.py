@@ -227,7 +227,12 @@ def app():
                 st.session_state.selected_algorithm = selected_algorithms[0]
 
             # Display the dropdown to select the algorithm
+            if "selected_algorithm" not in st.session_state:
+                st.session_state.selected_algorithm = selected_algorithms[0]
+
+            # Display the dropdown to select the algorithm
             selected_algorithm = st.selectbox("Select Algorithm for Route Breakdown", selected_algorithms, key="algorithm-dropdown")
+
             # Display the distances between consecutive points in the route for the selected algorithm
             if st.session_state.selected_algorithm:
                 st.write(f"Route Breakdown for {st.session_state.selected_algorithm}:")
@@ -240,7 +245,7 @@ def app():
                 # Create a DataFrame showing the pairs and their distances
                 route_data = pd.DataFrame({
                     "From": [f"Point {i+1} ({pair[0][0]}, {pair[0][1]})" for i, pair in enumerate(route_pairs)],
-                    "To": [f"Point {i%len(route)+1} ({pair[1][0]}, {pair[1][1]})" for i, pair in enumerate(route_pairs)],
+                    "To": [f"Point {i+2 if i+2 <= len(route) else 1} ({pair[1][0]}, {pair[1][1]})" for i, pair in enumerate(route_pairs)],
                     "Distance (km)": distances
                 })
                 st.write(route_data)
