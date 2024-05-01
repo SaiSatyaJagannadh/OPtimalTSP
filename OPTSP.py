@@ -172,7 +172,6 @@ def app():
     folium_static(m)
 
     # Checkboxes for TSP algorithms
-    # Text above TSP algorithms checkboxes
     st.write("Select the TSP algorithms you want to use:")
     tsp_algorithms = {
         "Nearest Neighbor": nearest_neighbor_algorithm,
@@ -181,124 +180,65 @@ def app():
         "Genetic Algorithm": genetic_algorithm,
         "Simulated Annealing": simulated_annealing_algorithm
     }
+
     select_all = st.checkbox("Select All")
     if select_all:
         selected_algorithms = list(tsp_algorithms.keys())
     else:
         selected_algorithms = [name for name in tsp_algorithms if st.checkbox(name)]
 
-    # selected_algorithms = [name for name in tsp_algorithms if st.checkbox(name)]
-
     # Button to compute the optimized route
     if st.button('Generate Optimized Route'):
         if len(st.session_state.points) >= 2 and selected_algorithms:
             execution_times = {}
             routes = {}
-            best_route = None
-            best_algorithm = None
-            min_distance = float('inf')
+            total_distances = {}
+
             for algorithm in selected_algorithms:
                 start_time = time.time()
                 route = tsp_algorithms[algorithm](st.session_state.points)
                 end_time = time.time()
-                execution_time = end_time - start_time
+                execution_time = (end_time - start_time) * 1000  # Convert to milliseconds
                 execution_times[algorithm] = execution_time
                 routes[algorithm] = route
 
-                total_distance = sum(calculate_distance(route[i], route[i+1]) for i in range(len(route)-1))
-                total_distance += calculate_distance(route[-1], route[0])  # add distance from last point back to the start
+                total_distance_km = sum(calculate_distance(route[i], route[i + 1]) for i in range(len(route) - 1))
+                total_distance_km += calculate_distance(route[-1], route[0])  # add distance from last point back to the start
+                total_distances[algorithm] = total_distance_km * 0.621371  # Convert to miles
 
-                if total_distance < min_distance:
-                    min_distance = total_distance
-                    best_route = route
-                    best_algorithm = algorithm
+            # Create a DataFrame to store the results
+            results_df = pd.DataFrame({
+                "Algorithm": selected_algorithms,
+                "Total Distance (miles)": [total_distances[alg] for alg in selected_algorithms],
+                "Execution Time (ms)": [execution_times[alg] for alg in selected_algorithms]
+            })
 
-                st.write(f"Optimized Delivery Route for {algorithm}:")
-                st.write(f"Total Distance: {total_distance} kilometers")
-                # for idx, loc in enumerate(route):
-                #     st.write(f"{idx+1}: {loc}")
+            # Display the results as a table
+            st.write("Optimization Results:")
+            st.write(results_df)
 
-                # Generate distance matrix
-                distance_matrix = generate_distance_matrix(route)
-                # visualize_distance_matrix(distance_matrix)
-
-                # Re-draw the map with the route
-                # m = folium.Map(location=[36.7014631, -118.755997], zoom_start=10, tiles='OpenStreetMap')
-                # add_markers_and_path(m, st.session_state.points, route)
-                # folium_static(m)
-
-            # Print the best route and its total distance
+            # Displaying the best algorithm and distance
+            best_algorithm = results_df["Algorithm"][results_df["Total Distance (miles)"].idxmin()]
+            best_route = routes[best_algorithm]
             st.write(f"Best Optimized Delivery Route for {best_algorithm}:")
-            # for idx, loc in enumerate(best_route):
-            #     st.write(f"{idx+1}: {loc}")
-            total_distance_best = sum(calculate_distance(best_route[i], best_route[i+1]) for i in range(len(best_route)-1))
-            total_distance_best += calculate_distance(best_route[-1], best_route[0])  # add distance from last point back to the start
-            st.write(f"Total Distance: {total_distance_best} kilometers")
+            st.write(f"Total Distance: {results_df['Total Distance (miles)'][results_df['Total Distance (miles)'].idxmin()]} meters")
 
             # Re-draw the map with the best route
             m = folium.Map(location=[36.7014631, -118.755997], zoom_start=10, tiles='OpenStreetMap')
             add_markers_and_path(m, st.session_state.points, best_route)
             folium_static(m)
 
-            # # Bar graph for execution times
-            # st.subheader("Execution Times of TSP Algorithms")
-            # st.bar_chart(pd.DataFrame(execution_times.items(), columns=['Algorithm', 'Execution Time (s)']))
-            
-            #pie chart
-            # st.subheader("Execution Times of TSP Algorithms")
-            # execution_times_df = pd.DataFrame(execution_times.items(), columns=['Algorithm', 'Execution Time (s)'])
-            # fig, ax = plt.subplots()
-            # ax.pie(execution_times_df['Execution Time (s)'], labels=execution_times_df['Algorithm'], autopct='%1.1f%%', startangle=90)
-            # ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-            # st.pyplot(fig)
-
-            #line graph
-
-           # Line graph for execution times
-            # Line graph for execution times
-            # st.subheader("Execution Times of TSP Algorithms (Line Graph)")
-            # fig2, ax2 = plt.subplots()
-            # for alg in selected_algorithms:
-            #     ax2.plot(execution_times[alg], marker='o', label=alg)
-            # ax2.set_xlabel('Execution Time (s)')
-            # ax2.set_ylabel('Algorithm')
-            # ax2.legend()
-            # ax2.grid(True)
-            # plt.yticks(rotation=45, ha='right')  # Rotate y-axis labels for better visibility
-            # st.pyplot(fig2)
-
-            # Bar graph for execution times
+            # Optionally display execution time visualization Bargraph
             st.subheader("Execution Times of TSP Algorithms (Bar Graph)")
-            fig2, ax2 = plt.subplots()
-
-            # Track execution times for each algorithm
-            algorithm_execution_times = {}
-
-            # Plotting the bar graph and tracking execution times
-            for alg in selected_algorithms:
-                start_time = time.time()
-                route = tsp_algorithms[alg](st.session_state.points)
-                end_time = time.time()
-                execution_time = (end_time - start_time) * 1000  # Convert to milliseconds
-                algorithm_execution_times[alg] = execution_time
-                
-                # Only plot if there are execution times available
-                if route:
-                    ax2.bar(alg, execution_time)
-
-            ax2.set_ylabel('Execution Time (ms)')
-            ax2.set_xlabel('Algorithm')
-            ax2.grid(True)
-            plt.xticks(rotation=45, ha='right')  # Rotate x-axis labels for better visibility
+            fig, ax = plt.subplots()
+            ax.bar(results_df["Algorithm"], results_df["Execution Time (ms)"])
+            ax.set_ylabel('Execution Time (ms)')
+            ax.set_xlabel('Algorithm')
+            ax.grid(True)
+            plt.xticks(rotation=45, ha='right')  # Rotate labels for better visibility
             plt.tight_layout()  # Adjust layout to prevent overlap
-            # st.pyplot(fig2)
+            st.pyplot(fig)
 
-            # Display execution times in milliseconds
-            st.subheader("Execution Times")
-            for alg, time_taken in algorithm_execution_times.items():
-                st.write(f"{alg}: {time_taken:.2f} milliseconds")
-            st.pyplot(fig2)
-        
         else:
             st.error("Please add at least two locations and select at least one algorithm.")
 
