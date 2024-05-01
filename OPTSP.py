@@ -215,7 +215,9 @@ def app():
             results_df = pd.DataFrame({
                 "Algorithm": selected_algorithms,
                 "Total Distance (miles)": [total_distances[alg] for alg in selected_algorithms],
-                "Execution Time (ms)": [execution_times[alg] for alg in selected_algorithms]
+                "Execution Time (ms)": [execution_times[alg] for alg in selected_algorithms],
+                "Route": [" -> ".join([f'({point[0]}, {point[1]})' for point in routes[alg]]) for alg in selected_algorithms]  # New column for routes
+
             })
 
             # Display the results as a table
