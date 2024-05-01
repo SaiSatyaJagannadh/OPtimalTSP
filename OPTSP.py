@@ -222,6 +222,19 @@ def app():
             st.write("Optimization Results:")
             st.write(results_df)
 
+            # Display the distances between consecutive points in the route
+            st.write(f"Route Breakdown for {algorithm}:")
+            route_pairs = [(route[i], route[i + 1]) for i in range(len(route) - 1)] + [(route[-1], route[0])]
+            distances = [calculate_distance(pair[0], pair[1]) for pair in route_pairs]
+            # Create a DataFrame showing the pairs and their distances
+            route_data = pd.DataFrame({
+                "From": [f"Point {i+1}" for i in range(len(route))],
+                "To": [f"Point {i%len(route)+1}" for i in range(1, len(route)+1)],
+                "Distance (km)": distances
+            })
+            st.write(route_data)
+
+
             # Displaying the best algorithm and distance
             best_algorithm = results_df["Algorithm"][results_df["Total Distance (miles)"].idxmin()]
             best_route = routes[best_algorithm]
