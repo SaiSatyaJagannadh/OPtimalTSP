@@ -226,12 +226,8 @@ def app():
             if "selected_algorithm" not in st.session_state:
                 st.session_state.selected_algorithm = selected_algorithms[0]
 
-            # Display the dropdown to select the algorithm
-            if "selected_algorithm" not in st.session_state:
-                st.session_state.selected_algorithm = selected_algorithms[0]
-
-            # Display the dropdown to select the algorithm
-            selected_algorithm = st.selectbox("Select Algorithm for Route Breakdown", selected_algorithms, key="algorithm-dropdown")
+            # Display the dropdown to select the algorithm with a unique key
+            selected_algorithm = st.selectbox("Select Algorithm for Route Breakdown", selected_algorithms, key="algorithm-dropdown-unique")
 
             # Display the distances between consecutive points in the route for the selected algorithm
             if st.session_state.selected_algorithm:
@@ -240,13 +236,15 @@ def app():
                 route = tsp_algorithms[st.session_state.selected_algorithm](st.session_state.points)
                 # Create route pairs
                 route_pairs = [(route[i], route[i + 1]) for i in range(len(route) - 1)] + [(route[-1], route[0])]
-                # Calculate distances for each pair
-                distances = [calculate_distance(pair[0], pair[1]) for pair in route_pairs]
+                # Calculate distances for each pair in kilometers
+                distances_km = [calculate_distance(pair[0], pair[1]) for pair in route_pairs]
+                # Convert distances from kilometers to miles
+                distances_miles = [distance_km * 0.621371 for distance_km in distances_km]
                 # Create a DataFrame showing the pairs and their distances
                 route_data = pd.DataFrame({
                     "From": [f"Point {i+1} ({pair[0][0]}, {pair[0][1]})" for i, pair in enumerate(route_pairs)],
                     "To": [f"Point {i+2 if i+2 <= len(route) else 1} ({pair[1][0]}, {pair[1][1]})" for i, pair in enumerate(route_pairs)],
-                    "Distance (km)": distances
+                    "Distance (miles)": distances_miles
                 })
                 st.write(route_data)
 
