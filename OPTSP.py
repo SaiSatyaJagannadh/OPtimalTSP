@@ -225,22 +225,14 @@ def app():
             st.write(results_df)
 
             # Dropdown to select algorithm for route breakdown
-            if "selected_algorithm" not in st.session_state:
-                st.session_state.selected_algorithm = selected_algorithms[0]
-            # Display the dropdown to select the algorithm with a unique key
-            selected_algorithm = st.selectbox("Select Algorithm for Route Breakdown", selected_algorithms, key="algorithm-dropdown-unique")
-            # Display the distances between consecutive points in the route for the selected algorithm
-            if st.session_state.selected_algorithm:
-                st.write(f"Route Breakdown for {st.session_state.selected_algorithm}:")
-                # Compute the route for the selected algorithm
-                route = tsp_algorithms[st.session_state.selected_algorithm](st.session_state.points)
-                # Create route pairs
+            # Display route breakdowns and distance matrices for all selected algorithms
+            for algorithm in selected_algorithms:
+                st.write(f"Route Breakdown for {algorithm}:")
+                route = tsp_algorithms[algorithm](st.session_state.points)
                 route_pairs = [(route[i], route[i + 1]) for i in range(len(route) - 1)] + [(route[-1], route[0])]
-                # Calculate distances for each pair in kilometers
                 distances_km = [calculate_distance(pair[0], pair[1]) for pair in route_pairs]
-                # Convert distances from kilometers to miles
                 distances_miles = [distance_km * 0.621371 for distance_km in distances_km]
-                # Create a DataFrame showing the pairs and their distances
+
                 route_data = pd.DataFrame({
                     "From": [f"Point {i+1} ({pair[0][0]}, {pair[0][1]})" for i, pair in enumerate(route_pairs)],
                     "To": [f"Point {i+2 if i+2 <= len(route) else 1} ({pair[1][0]}, {pair[1][1]})" for i, pair in enumerate(route_pairs)],
@@ -248,24 +240,13 @@ def app():
                 })
                 st.write(route_data)
 
-            # Dropdown to select algorithm for distance matrix
-            selected_algorithm_distance = st.selectbox("Select Algorithm for Distance Matrix", selected_algorithms)
-
-            # Display the distance matrix for the selected algorithm
-            if selected_algorithm_distance:
-                st.write(f"Distance Matrix for {selected_algorithm_distance}:")
-                # Compute the route for the selected algorithm
-                route_distance = tsp_algorithms[selected_algorithm_distance](st.session_state.points)
-                # Initialize an empty distance matrix
-                distance_matrix = np.zeros((len(route_distance), len(route_distance)))
-                # Calculate the distance between each pair of points in the route
-                for i in range(len(route_distance)):
-                    for j in range(len(route_distance)):
-                        distance_matrix[i, j] = calculate_distance(route_distance[i], route_distance[j])
+                st.write(f"Distance Matrix for {algorithm}:")
+                distance_matrix = np.zeros((len(route), len(route)))
+                for i in range(len(route)):
+                    for j in range(len(route)):
+                        distance_matrix[i, j] = calculate_distance(route[i], route[j])
                 distance_matrix_miles = distance_matrix * 0.621371
-                # Create column and index labels for the distance matrix
-                labels = [f"Point {i+1} ({route_distance[i][0]}, {route_distance[i][1]})" for i in range(len(route_distance))]
-                # Display the distance matrix as a DataFrame with labels
+                labels = [f"Point {i+1} ({route[i][0]}, {route[i][1]})" for i in range(len(route))]
                 st.write(pd.DataFrame(distance_matrix_miles, columns=labels, index=labels))
 
             # Displaying the best algorithm and distance
