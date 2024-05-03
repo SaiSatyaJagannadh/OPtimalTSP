@@ -16,15 +16,29 @@ def calculate_distance(point1, point2):
     return geodesic(point1, point2).kilometers
 
 # Function to add markers and draw a path on the map
+# Function to add markers and draw a path on the map
 def add_markers_and_path(map_object, points, path):
-    for point in points:
+    # Use enumerate to get index and point
+    for index, point in enumerate(points):
+        # Get the next point in the list, wrap around to the start
+        next_index = (index + 1) % len(points)
+        next_point = points[next_index]
+        # Generate label text for current and next points
+        current_point_label = f"Point {index + 1}"
+        next_point_label = f"Point {next_index + 1}"
+
+        # Create tooltip text showing the sequence to the next point
+        tooltip_text = f"{current_point_label}: ({point[0]}, {point[1]}) -> {next_point_label}: ({next_point[0]}, {next_point[1]})"
+
         folium.Marker(
             location=[point[0], point[1]],
-            popup=f'({point[0]}, {point[1]})'
+            popup=f"{current_point_label}: ({point[0]}, {point[1]})",
+            tooltip=tooltip_text  # Updated tooltip with next point label
         ).add_to(map_object)
+
     # Draw the path if available
     if path:
-        folium.PolyLine(path, color='blue', weight=5, opacity=0.7).add_to(map_object)
+        folium.PolyLine(path, color='red', weight=5, opacity=0.7).add_to(map_object)
 
 # Function to solve the TSP using various algorithms
 def nearest_neighbor_algorithm(points):
@@ -48,7 +62,6 @@ def nearest_neighbor_algorithm(points):
         current_point = nearest_point
 
     return solution + [start_point]  # Return to start and close the loop
-
 
 def brute_force_algorithm(points):
     min_distance = float('inf')
@@ -120,29 +133,39 @@ def simulated_annealing_algorithm(points):
 
 # Streamlit app
 def app():
-    st.title('Optimal Delivery Route System Using TSP Algorithms')
+    st.title('Efficient Pathway Planner using TSP algorithms')
 
     # Initialize or update the session state for points
     if 'points' not in st.session_state:
         st.session_state.points = []
 
-    # Form for adding new markers
-    with st.form("points_input_add"):
-        lat = st.number_input('Latitude', value=36.7014631, format="%.4f")
-        lon = st.number_input('Longitude', value=-118.755997, format="%.4f")
-        submitted = st.form_submit_button('Add location')
-        if submitted:
-            new_point = (lat, lon)
-            if new_point not in st.session_state.points:
-                st.session_state.points.append(new_point)
-                st.success(f"Marker added at ({lat}, {lon})")
-            else:
-                st.error(f"Coordinates ({lat}, {lon}) already exist, give other coordinates.")
+    # Creating a side-by-side layout for the map and location input
+    cols = st.columns([1,2])
 
-    # Display map with current markers
-    m = folium.Map(location=[36.7014631, -118.755997], zoom_start=8, tiles='OpenStreetMap')
-    add_markers_and_path(m, st.session_state.points, [])
-    folium_static(m)
+    with cols[0]:
+        st.write("Add Locations in the Map")
+        # Form for adding new markers
+        with st.form("points_input_add"):
+            lat = st.number_input('Latitude', value=36.7014631, format="%.4f")
+            lon = st.number_input('Longitude', value=-118.755997, format="%.4f")
+            submitted = st.form_submit_button('Add location')
+            if submitted:
+                new_point = (lat, lon)
+                if new_point not in st.session_state.points:
+                    st.session_state.points.append(new_point)
+                    st.success(f"Marker added at ({lat}, {lon})")
+                else:
+                    st.error(f"Coordinates ({lat}, {lon}) already exist, give other coordinates.")
+        
+        if st.button('Refresh Points'):
+            st.session_state.points = []
+            st.write("Points have been reset.")
+
+    with cols[1]:
+        # Display map with current markers
+        m = folium.Map(location=[36.7014631, -118.755997], zoom_start=8, tiles='OpenStreetMap')
+        add_markers_and_path(m, st.session_state.points, [])
+        folium_static(m)
 
     # Checkbox selection for TSP algorithms
     st.write("Select the TSP algorithms you want to use:")
@@ -160,11 +183,6 @@ def app():
         selected_algorithms = list(tsp_algorithms.keys())
     else:
         selected_algorithms = [name for name in tsp_algorithms if st.checkbox(name)]
-
-    # Refresh Button
-    if st.button('Refresh Points'):
-        st.session_state.points = []
-        st.write("Points have been reset.")
 
     # Button to compute the optimized route
     if st.button('Generate Optimized Route'):
@@ -229,7 +247,7 @@ def app():
             # Best Algorithm
             best_algorithm = results_df["Algorithm"][results_df["Total Distance (miles)"].idxmin()]
             st.write(f"Best Optimized Route Provided by {best_algorithm}:")
-            m = folium.Map(location=[36.7014631, -118.755997], zoom_start=10, tiles='OpenStreetMap')
+            m = folium.Map(location=[36.7014631, -118.755997], zoom_start=11, tiles='OpenStreetMap')
             add_markers_and_path(m, st.session_state.points, routes[best_algorithm])
             folium_static(m)
 
@@ -237,6 +255,8 @@ def app():
             st.subheader("Execution Times of TSP Algorithms")
             fig, ax = plt.subplots()
             ax.bar(results_df["Algorithm"], results_df["Execution Time (ms)"])
+            ax.set_xlabel('Algorithms')
+            ax.set_ylabel('milliseconds')
             plt.xticks(rotation=45, ha='right')
             plt.tight_layout()
             st.pyplot(fig)
@@ -245,7 +265,7 @@ def app():
             fig2, ax2 = plt.subplots()
             ax2.plot(results_df["Algorithm"], results_df["Total Distance (miles)"], marker='o')
             ax2.set_xlabel('Algorithms')
-            ax2.set_ylabel('Distances')
+            ax2.set_ylabel('Distances in miles')
             plt.xticks(rotation=45)
             st.pyplot(fig2)
 
@@ -254,3 +274,4 @@ def app():
 
 if __name__ == "__main__":
     app()
+
